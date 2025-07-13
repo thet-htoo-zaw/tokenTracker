@@ -2,13 +2,18 @@
   "name": "tokentrackernative",
   "main": "expo-router/entry",
   "version": "1.0.0",
+  "description": "React Native Web3 app for tracking Ethereum tokens and portfolio value",
   "scripts": {
     "start": "expo start",
     "reset-project": "node ./scripts/reset-project.js",
     "android": "expo start --android",
     "ios": "expo start --ios",
     "web": "expo start --web",
-    "lint": "expo lint"
+    "lint": "expo lint",
+    "build:ios": "expo build:ios",
+    "build:android": "expo build:android",
+    "test": "jest",
+    "type-check": "tsc --noEmit"
   },
   "dependencies": {
     "@expo/vector-icons": "^14.1.0",
@@ -45,5 +50,25 @@
     "eslint": "^9.25.0",
     "eslint-config-expo": "~9.2.0"
   },
-  "private": true
+  "private": true,
+  "keywords": [
+    "react-native",
+    "web3",
+    "ethereum",
+    "crypto",
+    "wallet",
+    "tokens",
+    "portfolio",
+    "expo"
+  ],
+  "author": "Your Name",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yourusername/tokenTrackerNative.git"
+  },
+  "bugs": {
+    "url": "https://github.com/yourusername/tokenTrackerNative/issues"
+  },
+  "homepage": "https://github.com/yourusername/tokenTrackerNative#readme"
 }
