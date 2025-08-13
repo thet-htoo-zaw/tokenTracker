@@ -14,14 +14,19 @@ import {
 } from 'react-native';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
+import { handleNumericInputChange } from '../utils/validation';
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
 export default function BuyScreen() {
   const { isAuthenticated } = useAuth();
   const { colors } = useTheme();
+  
   const [amount, setAmount] = useState('');
   const [selectedCoin, setSelectedCoin] = useState('BTC');
+  const [loading, setLoading] = useState(false);
+  const [processingStep, setProcessingStep] = useState('');
+  const [paymentMethod, setPaymentMethod] = useState<'card' | 'wallet'>('card');
 
   if (!isAuthenticated) {
     return (
@@ -41,12 +46,65 @@ export default function BuyScreen() {
     );
   }
 
-  const handleBuy = () => {
+  const handleBuy = async () => {
     if (!amount || parseFloat(amount) <= 0) {
       Alert.alert('Error', 'Please enter a valid amount');
       return;
     }
-    Alert.alert('Success', `Order placed to buy $${amount} worth of ${selectedCoin}`);
+
+    setLoading(true);
+
+    try {
+      // Simulate realistic purchase flow
+      const steps = [
+        'Validating transaction...',
+        'Processing payment...',
+        'Confirming purchase...',
+        'Updating portfolio...',
+        'Completing transaction...'
+      ];
+
+      for (let i = 0; i < steps.length; i++) {
+        setProcessingStep(steps[i]);
+        await new Promise(resolve => setTimeout(resolve, 800 + Math.random() * 400));
+      }
+
+      // Generate a realistic transaction ID
+      const transactionId = `TX${Date.now().toString().slice(-8)}${Math.random().toString(36).substr(2, 4).toUpperCase()}`;
+      
+      Alert.alert(
+        '🎉 Purchase Successful!',
+        `Successfully purchased ${parseFloat(amount).toFixed(2)} USD worth of ${selectedCoin}\n\nTransaction ID: ${transactionId}\n\nYour ${selectedCoin} has been added to your portfolio.`,
+        [
+          {
+            text: 'View Portfolio',
+            onPress: () => router.push('/' as any)
+          },
+          {
+            text: 'OK',
+            style: 'default'
+          }
+        ]
+      );
+    } catch (error) {
+      Alert.alert('Error', 'An unexpected error occurred during the purchase');
+    } finally {
+      setLoading(false);
+      setProcessingStep('');
+    }
+  };
+
+  // Calculate fees for display
+  const amountValue = parseFloat(amount) || 0;
+  const platformFee = 2.99;
+  const processingFee = paymentMethod === 'card' ? 1.50 : 0.00;
+  const total = amountValue + platformFee + processingFee;
+
+  // Check if buy button should be disabled
+  const isBuyDisabled = !amount || parseFloat(amount) <= 0 || loading;
+
+  const formatCurrency = (value: number) => {
+    return `$${value.toFixed(2)}`;
   };
 
   return (
@@ -94,7 +152,7 @@ export default function BuyScreen() {
               borderColor: colors.border 
             }]}
             value={amount}
-            onChangeText={setAmount}
+            onChangeText={(text) => handleNumericInputChange(text, setAmount)}
             placeholder="Enter amount in USD"
             placeholderTextColor={colors.textTertiary}
             keyboardType="numeric"
@@ -102,33 +160,113 @@ export default function BuyScreen() {
         </View>
 
         <View style={[styles.card, { backgroundColor: colors.card }]}>
+          <Text style={[styles.cardTitle, { color: colors.text }]}>Payment Method</Text>
+          <View style={styles.paymentMethodSelector}>
+            <TouchableOpacity
+              style={[
+                styles.paymentOption,
+                { backgroundColor: colors.cardSecondary },
+                paymentMethod === 'card' && { backgroundColor: colors.primary },
+              ]}
+              onPress={() => setPaymentMethod('card')}
+            >
+              <Ionicons 
+                name="card" 
+                size={20} 
+                color={paymentMethod === 'card' ? colors.text : colors.textSecondary} 
+              />
+              <Text style={[
+                styles.paymentOptionText,
+                { color: paymentMethod === 'card' ? colors.text : colors.textSecondary },
+              ]}>
+                Credit Card
+              </Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity
+              style={[
+                styles.paymentOption,
+                { backgroundColor: colors.cardSecondary },
+                paymentMethod === 'wallet' && { backgroundColor: colors.primary },
+              ]}
+              onPress={() => setPaymentMethod('wallet')}
+            >
+              <Ionicons 
+                name="wallet" 
+                size={20} 
+                color={paymentMethod === 'wallet' ? colors.text : colors.textSecondary} 
+              />
+              <Text style={[
+                styles.paymentOptionText,
+                { color: paymentMethod === 'wallet' ? colors.text : colors.textSecondary },
+              ]}>
+                Crypto Wallet
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        <View style={[styles.card, { backgroundColor: colors.card }]}>
           <Text style={[styles.cardTitle, { color: colors.text }]}>Order Summary</Text>
           <View style={styles.summaryRow}>
             <Text style={[styles.summaryLabel, { color: colors.textSecondary }]}>Amount:</Text>
-            <Text style={[styles.summaryValue, { color: colors.text }]}>${amount || '0.00'}</Text>
+            <Text style={[styles.summaryValue, { color: colors.text }]}>{formatCurrency(amountValue)}</Text>
           </View>
           <View style={styles.summaryRow}>
             <Text style={[styles.summaryLabel, { color: colors.textSecondary }]}>Coin:</Text>
             <Text style={[styles.summaryValue, { color: colors.text }]}>{selectedCoin}</Text>
           </View>
           <View style={styles.summaryRow}>
-            <Text style={[styles.summaryLabel, { color: colors.textSecondary }]}>Fee:</Text>
-            <Text style={[styles.summaryValue, { color: colors.text }]}>$2.99</Text>
+            <Text style={[styles.summaryLabel, { color: colors.textSecondary }]}>Payment Method:</Text>
+            <Text style={[styles.summaryValue, { color: colors.text }]}>
+              {paymentMethod === 'card' ? 'Credit Card' : 'Crypto Wallet'}
+            </Text>
+          </View>
+          <View style={styles.summaryRow}>
+            <Text style={[styles.summaryLabel, { color: colors.textSecondary }]}>Platform Fee:</Text>
+            <Text style={[styles.summaryValue, { color: colors.text }]}>{formatCurrency(platformFee)}</Text>
+          </View>
+          <View style={styles.summaryRow}>
+            <Text style={[styles.summaryLabel, { color: colors.textSecondary }]}>Processing Fee:</Text>
+            <Text style={[styles.summaryValue, { color: colors.text }]}>
+              {formatCurrency(processingFee)}
+            </Text>
           </View>
           <View style={[styles.summaryRow, styles.totalRow, { borderTopColor: colors.border }]}>
             <Text style={[styles.totalLabel, { color: colors.text }]}>Total:</Text>
             <Text style={[styles.totalValue, { color: colors.text }]}>
-              ${amount ? (parseFloat(amount) + 2.99).toFixed(2) : '0.00'}
+              {formatCurrency(total)}
             </Text>
           </View>
         </View>
 
         <TouchableOpacity 
-          style={[styles.buyButton, { backgroundColor: colors.success }]} 
+          style={[
+            styles.buyButton, 
+            { backgroundColor: colors.success },
+            isBuyDisabled && { backgroundColor: colors.textTertiary, opacity: 0.5 }
+          ]} 
           onPress={handleBuy}
+          disabled={isBuyDisabled}
         >
-          <Ionicons name="card" size={20} color={colors.text} />
-          <Text style={[styles.buyButtonText, { color: colors.text }]}>Buy {selectedCoin}</Text>
+          {loading ? (
+            <View style={styles.loadingContainer}>
+              <Ionicons name="sync" size={20} color={colors.text} style={styles.spinningIcon} />
+              <View style={styles.loadingTextContainer}>
+                <Text style={[styles.buyButtonText, { color: colors.text }]}>Processing...</Text>
+                {processingStep ? (
+                  <Text style={[styles.processingStep, { color: colors.textSecondary }]}>
+                    {processingStep}
+                  </Text>
+                ) : null}
+              </View>
+            </View>
+          ) : (
+            <>
+              <Ionicons name="card" size={20} color={colors.text} />
+              <Text style={[styles.buyButtonText, { color: colors.text }]}>Buy {selectedCoin}</Text>
+            </>
+          )}
         </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
@@ -221,6 +359,24 @@ const styles = StyleSheet.create({
     fontSize: Math.max(16, screenWidth * 0.04),
     borderWidth: 1,
   },
+  paymentMethodSelector: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: Math.max(10, screenWidth * 0.03),
+    marginTop: 10,
+  },
+  paymentOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: Math.max(12, screenHeight * 0.015),
+    paddingHorizontal: Math.max(16, screenWidth * 0.04),
+    borderRadius: 8,
+    gap: 8,
+  },
+  paymentOptionText: {
+    fontSize: Math.max(14, screenWidth * 0.035),
+    fontWeight: '500',
+  },
   summaryRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -263,5 +419,20 @@ const styles = StyleSheet.create({
   buyButtonText: {
     fontSize: Math.max(16, screenWidth * 0.04),
     fontWeight: '600',
+  },
+  loadingContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  loadingTextContainer: {
+    flex: 1,
+  },
+  processingStep: {
+    fontSize: Math.max(12, screenWidth * 0.03),
+    marginTop: 2,
+  },
+  spinningIcon: {
+    transform: [{ rotate: '360deg' }],
   },
 }); 

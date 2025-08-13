@@ -16,6 +16,7 @@ import {
 } from 'react-native';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
+import { handleNumericInputChange } from '../utils/validation';
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
@@ -52,6 +53,8 @@ export default function SwapScreen() {
   const [toCoin, setToCoin] = useState('ETH');
   const [showFromDropdown, setShowFromDropdown] = useState(false);
   const [showToDropdown, setShowToDropdown] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [processingStep, setProcessingStep] = useState('');
 
   if (!isAuthenticated) {
     return (
@@ -71,13 +74,57 @@ export default function SwapScreen() {
     );
   }
 
-  const handleSwap = () => {
+  const handleSwap = async () => {
     if (!fromAmount || parseFloat(fromAmount) <= 0) {
       Alert.alert('Error', 'Please enter a valid amount');
       return;
     }
-    Alert.alert('Success', `Swap order placed: ${fromAmount} ${fromCoin} → ${toAmount} ${toCoin}`);
+
+    setLoading(true);
+
+    try {
+      // Simulate realistic swap flow
+      const steps = [
+        'Validating swap parameters...',
+        'Checking liquidity...',
+        'Calculating exchange rate...',
+        'Executing swap...',
+        'Confirming transaction...',
+        'Updating balances...'
+      ];
+
+      for (let i = 0; i < steps.length; i++) {
+        setProcessingStep(steps[i]);
+        await new Promise(resolve => setTimeout(resolve, 600 + Math.random() * 300));
+      }
+
+      // Generate a realistic transaction ID
+      const transactionId = `SW${Date.now().toString().slice(-8)}${Math.random().toString(36).substr(2, 4).toUpperCase()}`;
+      
+      Alert.alert(
+        '🔄 Swap Successful!',
+        `Successfully swapped ${fromAmount} ${fromCoin} for ${toAmount} ${toCoin}\n\nTransaction ID: ${transactionId}\n\nYour ${toCoin} has been added to your portfolio.`,
+        [
+          {
+            text: 'View Portfolio',
+            onPress: () => router.push('/' as any)
+          },
+          {
+            text: 'OK',
+            style: 'default'
+          }
+        ]
+      );
+    } catch (error) {
+      Alert.alert('Error', 'An unexpected error occurred during the swap');
+    } finally {
+      setLoading(false);
+      setProcessingStep('');
+    }
   };
+
+  // Check if swap button should be disabled
+  const isSwapDisabled = !fromAmount || parseFloat(fromAmount) <= 0 || !toAmount || parseFloat(toAmount) <= 0 || loading;
 
   const swapCoins = () => {
     const tempCoin = fromCoin;
@@ -134,7 +181,7 @@ export default function SwapScreen() {
                 borderColor: colors.border 
               }]}
               value={fromAmount}
-              onChangeText={setFromAmount}
+              onChangeText={(text) => handleNumericInputChange(text, setFromAmount)}
               placeholder="0.00"
               placeholderTextColor={colors.textTertiary}
               keyboardType="numeric"
@@ -153,6 +200,7 @@ export default function SwapScreen() {
           <TouchableOpacity 
             style={[styles.swapButton, { backgroundColor: colors.warning }]} 
             onPress={swapCoins}
+            disabled={loading}
           >
             <Ionicons name="swap-vertical" size={20} color={colors.text} />
           </TouchableOpacity>
@@ -168,7 +216,7 @@ export default function SwapScreen() {
                 borderColor: colors.border 
               }]}
               value={toAmount}
-              onChangeText={setToAmount}
+              onChangeText={(text) => handleNumericInputChange(text, setToAmount)}
               placeholder="0.00"
               placeholderTextColor={colors.textTertiary}
               keyboardType="numeric"
@@ -197,14 +245,41 @@ export default function SwapScreen() {
             <Text style={[styles.detailLabel, { color: colors.textSecondary }]}>Slippage:</Text>
             <Text style={[styles.detailValue, { color: colors.text }]}>0.5%</Text>
           </View>
+          <View style={styles.detailRow}>
+            <Text style={[styles.detailLabel, { color: colors.textSecondary }]}>Minimum Received:</Text>
+            <Text style={[styles.detailValue, { color: colors.text }]}>
+              {toAmount ? (parseFloat(toAmount) * 0.995).toFixed(4) : '0.0000'} {toCoin}
+            </Text>
+          </View>
         </View>
 
         <TouchableOpacity 
-          style={[styles.swapActionButton, { backgroundColor: colors.warning }]} 
+          style={[
+            styles.swapActionButton, 
+            { backgroundColor: colors.warning },
+            isSwapDisabled && { backgroundColor: colors.textTertiary, opacity: 0.5 }
+          ]} 
           onPress={handleSwap}
+          disabled={isSwapDisabled}
         >
-          <Ionicons name="swap-horizontal" size={20} color={colors.text} />
-          <Text style={[styles.swapActionButtonText, { color: colors.text }]}>Swap {fromCoin} for {toCoin}</Text>
+          {loading ? (
+            <View style={styles.loadingContainer}>
+              <Ionicons name="sync" size={20} color={colors.text} style={styles.spinningIcon} />
+              <View style={styles.loadingTextContainer}>
+                <Text style={[styles.swapActionButtonText, { color: colors.text }]}>Processing...</Text>
+                {processingStep ? (
+                  <Text style={[styles.processingStep, { color: colors.textSecondary }]}>
+                    {processingStep}
+                  </Text>
+                ) : null}
+              </View>
+            </View>
+          ) : (
+            <>
+              <Ionicons name="swap-horizontal" size={20} color={colors.text} />
+              <Text style={[styles.swapActionButtonText, { color: colors.text }]}>Swap {fromCoin} for {toCoin}</Text>
+            </>
+          )}
         </TouchableOpacity>
       </ScrollView>
 
@@ -419,6 +494,21 @@ const styles = StyleSheet.create({
   swapActionButtonText: {
     fontSize: Math.max(16, screenWidth * 0.04),
     fontWeight: '600',
+  },
+  loadingContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  loadingTextContainer: {
+    flex: 1,
+  },
+  processingStep: {
+    fontSize: Math.max(12, screenWidth * 0.03),
+    marginTop: 2,
+  },
+  spinningIcon: {
+    transform: [{ rotate: '360deg' }],
   },
   modalOverlay: {
     flex: 1,

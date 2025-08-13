@@ -179,10 +179,7 @@ export default function SignUpScreen() {
             {loading ? (
               <ActivityIndicator color="#ffffff" />
             ) : (
-              <>
-                <Text style={styles.buttonText}>Create Account</Text>
-                <Text style={styles.buttonSubtext}>Start your crypto journey</Text>
-              </>
+              <Text style={styles.buttonText}>Create Account</Text>
             )}
           </TouchableOpacity>
 

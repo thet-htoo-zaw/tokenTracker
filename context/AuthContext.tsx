@@ -1,6 +1,5 @@
 import { User, onAuthStateChanged } from 'firebase/auth';
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { Alert } from 'react-native';
 import { auth } from '../firebase';
 import {
     signInWithEmail,
@@ -62,28 +61,18 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   const handleSignOut = async () => {
-    return new Promise<{ success: boolean; error?: string }>((resolve) => {
-      Alert.alert(
-        'Confirm Sign Out',
-        'Are you sure you want to sign out?',
-        [
-          {
-            text: 'Cancel',
-            style: 'cancel',
-            onPress: () => resolve({ success: false }),
-          },
-          {
-            text: 'Sign Out',
-            style: 'destructive',
-            onPress: async () => {
-              const result = await signOutUser();
-              resolve(result);
-            },
-          },
-        ],
-        { cancelable: true }
-      );
-    });
+    try {
+      const result = await signOutUser();
+      if (result.success) {
+        // User is automatically signed out, no need for additional feedback
+        // The onAuthStateChanged listener will update the user state
+        return { success: true };
+      } else {
+        return { success: false, error: result.error };
+      }
+    } catch (error) {
+      return { success: false, error: 'An error occurred during sign out' };
+    }
   };
 
   const value: AuthContextType = {

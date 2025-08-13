@@ -125,10 +125,7 @@ export default function LoginScreen() {
             {loading ? (
               <ActivityIndicator color="#ffffff" />
             ) : (
-              <>
-                <Text style={styles.buttonText}>Sign In</Text>
-                <Text style={styles.buttonSubtext}>Access your crypto portfolio</Text>
-              </>
+              <Text style={styles.buttonText}>Sign In</Text>
             )}
           </TouchableOpacity>
 
